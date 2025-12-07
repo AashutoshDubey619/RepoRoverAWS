@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import logo from '../assets/logo.png';   // ⬅️ added
 
-const API_BASE_URL = 'https://reporover-backend.onrender.com';
+const API_BASE_URL = 'http://16.170.244.84:5000';
 
 function Signup() {
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
