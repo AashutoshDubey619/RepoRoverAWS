@@ -47,6 +47,7 @@ async function getRepoStructure(owner, repo, path = '') {
             }
         });
 
+        console.log(`API response for ${path}: ${response.data.length} items`);
         let allFiles = [];
         for (const item of response.data) {
             if (item.type === 'dir') {
@@ -93,6 +94,7 @@ app.post('/api/ingest', auth, async (req, res) => {
         });
 
         const validFiles = (await Promise.all(filePromises)).filter(Boolean);
+        console.log(`Valid files after download: ${validFiles.length}`);
         io.emit("log", `Processing ${validFiles.length} files`);
         await processAndStore(validFiles, msg => io.emit("log", msg));
         io.emit("log", `Ready for chat`);
