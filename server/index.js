@@ -81,6 +81,7 @@ app.post('/api/ingest', auth, async (req, res) => {
 
         io.emit("log", `Scanning repository...`);
         const fileList = await getRepoStructure(owner, repo);
+        console.log(`File list length: ${fileList.length}`);
         io.emit("log", `${fileList.length} files found`);
 
         const filePromises = fileList.map(async (file) => {

@@ -6,7 +6,7 @@ import { io } from "socket.io-client";
 import { useNavigate } from 'react-router-dom';
 import logo from "../assets/logo.png";
 
-const API_BASE_URL = 'http://16.170.244.84:5000';
+const API_BASE_URL = 'https://reporoveraws.onrender.com';
 
 function ChatInterface() {
   const navigate = useNavigate();
