@@ -9,7 +9,7 @@ const pinecone = new Pinecone({
 });
 
 const embeddings = new GoogleGenerativeAIEmbeddings({
-   model: "embedding-001",
+   model: "embedding-004",
    apiKey: process.env.GEMINI_API_KEY
 });
 
