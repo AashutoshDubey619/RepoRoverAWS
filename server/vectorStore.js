@@ -243,7 +243,7 @@ const pinecone = new Pinecone({
 
 // ✅ LangChain automatically handles the model name correctly now
 const embeddings = new GoogleGenerativeAIEmbeddings({
-   model: "text-embedding-004",
+   model: "embedding-001",
    apiKey: process.env.GEMINI_API_KEY
 });
 
