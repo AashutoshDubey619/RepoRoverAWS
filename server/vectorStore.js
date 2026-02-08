@@ -9,8 +9,8 @@ const pinecone = new Pinecone({
 });
 
 const embeddings = new GoogleGenerativeAIEmbeddings({
-    modelName: "text-embedding-004", 
-    apiKey: process.env.GEMINI_API_KEY
+   model: "embedding-001",
+   apiKey: process.env.GEMINI_API_KEY
 });
 
 // Helper: Batch processing for parallel execution with limit
