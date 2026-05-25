@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+import Landing from './pages/Landing';
 import ChatInterface from './pages/ChatInterface';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -14,8 +13,10 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        {/* Unified Auth & Landing Page */}
+        <Route path="/login" element={<Landing />} />
+        <Route path="/signup" element={<Landing />} />
+        <Route path="/auth" element={<Landing />} />
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
