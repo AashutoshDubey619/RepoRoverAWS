@@ -1,4 +1,5 @@
 const { Pinecone } = require('@pinecone-database/pinecone');
+const pLimit = require('p-limit');
 const { GoogleGenerativeAIEmbeddings } = require("@langchain/google-genai");
 const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 const dotenv = require('dotenv');
@@ -26,60 +27,65 @@ async function processAndStore(files, onProgress) {
     });
 
     let totalVectors = 0;
-    
-    // Loop through files sequentially (safer for rate limits than parallel processing)
-    for (const file of files) {
-        if (!file.content || typeof file.content !== 'string') continue;
+    let processedFiles = 0;
+    const limit = pLimit(10); // Process 10 files concurrently
 
-        if (onProgress) onProgress(`⚡ Processing: ${file.path}`);
+    const promises = files.map(file => limit(async () => {
+        if (!file.content || typeof file.content !== 'string') {
+            processedFiles++;
+            if (onProgress) onProgress({ stage: 'indexing', current: processedFiles, total: files.length });
+            return;
+        }
         
         // 1. Create text chunks from the file
         const chunks = await splitter.createDocuments([file.content]);
         
-        // 2. BATCHING LOGIC: Process chunks in groups of 10
-        // This means we send 1 API request instead of 10 separate ones.
-        const batchSize = 10; 
+        // 2. BATCHING LOGIC: Process chunks in groups of 100 (increased from 10)
+        const batchSize = 100; 
         
         for (let i = 0; i < chunks.length; i += batchSize) {
             const batchChunks = chunks.slice(i, i + batchSize);
             const batchTexts = batchChunks.map(c => c.pageContent);
 
-            try {
-                // 🚀 OPTIMIZATION: Send multiple texts at once
-                // Uses 'embedDocuments' (plural) to get a list of vectors
-                const batchVectors = await embeddings.embedDocuments(batchTexts);
+            let retries = 3;
+            while (retries > 0) {
+                try {
+                    // 🚀 OPTIMIZATION: Send multiple texts at once
+                    const batchVectors = await embeddings.embedDocuments(batchTexts);
 
-                // Prepare vectors for Pinecone
-                const vectorsToUpsert = batchChunks.map((chunk, idx) => ({
-                    id: `${file.path}-${Date.now()}-${i + idx}`,
-                    values: batchVectors[idx],
-                    metadata: {
-                        path: file.path,
-                        content: chunk.pageContent,
-                        repoUrl: file.repoUrl || "",
+                    // Prepare vectors for Pinecone
+                    const vectorsToUpsert = batchChunks.map((chunk, idx) => ({
+                        id: `${file.path}-${Date.now()}-${i + idx}`,
+                        values: batchVectors[idx],
+                        metadata: {
+                            path: file.path,
+                            content: chunk.pageContent,
+                            repoUrl: file.repoUrl || "",
+                        }
+                    }));
+
+                    // Upload to Pinecone
+                    if (vectorsToUpsert.length > 0) {
+                        await index.upsert(vectorsToUpsert);
+                        totalVectors += vectorsToUpsert.length;
+                        console.log(`✅ Indexed batch of ${vectorsToUpsert.length} chunks for ${file.path}`);
                     }
-                }));
-
-                // Upload to Pinecone
-                if (vectorsToUpsert.length > 0) {
-                    await index.upsert(vectorsToUpsert);
-                    totalVectors += vectorsToUpsert.length;
-                    console.log(`✅ Indexed batch of ${vectorsToUpsert.length} chunks for ${file.path}`);
+                    break; // Success, exit retry loop
+                } catch (err) {
+                    retries--;
+                    console.error(`⚠️ Error in batch processing for ${file.path} (Retries left: ${retries}): ${err.message}`);
+                    if (retries === 0) break;
+                    // If we hit a rate limit error, wait before trying next batch
+                    await sleep(5000);
                 }
-
-                // 🛑 SAFETY BRAKE: Wait 4 seconds after every batch
-                // This keeps you under the 100 requests/minute limit safely.
-                await sleep(4000); 
-
-            } catch (err) {
-                console.error(`⚠️ Error in batch processing for ${file.path}: ${err.message}`);
-                // If we hit a rate limit error, wait longer (10s) before trying next batch
-                await sleep(10000);
             }
         }
-    }
+        
+        processedFiles++;
+        if (onProgress) onProgress({ stage: 'indexing', current: processedFiles, total: files.length });
+    }));
 
-    if (onProgress) onProgress(`🚀 COMPLETE: Stored ${totalVectors} vectors!`);
+    await Promise.all(promises);
     return totalVectors;
 }
 

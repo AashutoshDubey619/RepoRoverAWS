@@ -12,13 +12,11 @@ const auth = async (req, res, next) => {
 
         if (!token) return res.status(401).json({ message: "No token provided." });
 
-        const isCustomAuth = token.length < 500;
+        const decodedData = jwt.verify(token, process.env.JWT_SECRET);
+        req.userId = decodedData?.id;
 
-        if (token && isCustomAuth) {
-            const decodedData = jwt.verify(token, 'SECRET_KEY');
-
-            req.userId = decodedData?.id;
-        } else {
+        if (!req.userId) {
+            return res.status(401).json({ message: "Invalid token." });
         }
 
         next();
