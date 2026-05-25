@@ -17,6 +17,7 @@ const chatSchema = new mongoose.Schema({
             timestamp: { type: Date, default: Date.now },
         },
     ],
+    files: [String],
     lastAccessed: { type: Date, default: Date.now }
 });
 

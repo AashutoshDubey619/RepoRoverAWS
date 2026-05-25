@@ -12,10 +12,14 @@ const askQuestion = async (req, res) => {
 
     try {
         let chat = await ChatHistory.findOne({ userId: req.userId, repoUrl: currentRepo });
-        if (!chat) chat = new ChatHistory({ userId: req.userId, repoUrl: currentRepo, messages: [] });
+        if (!chat) chat = new ChatHistory({ userId: req.userId, repoUrl: currentRepo, messages: [], files: [] });
 
         chat.messages.push({ role: 'user', text: question });
         // Don't save yet; save once at the end with the bot response to avoid 2 DB calls
+
+        // Parse @filename syntax
+        const match = question.match(/@([a-zA-Z0-9.\-_/]+)/);
+        let targetFile = match ? match[1] : null;
 
         // Set headers for SSE
         res.setHeader('Content-Type', 'text/event-stream');
@@ -25,7 +29,7 @@ const askQuestion = async (req, res) => {
         res.setHeader('X-Accel-Buffering', 'no');
         res.flushHeaders();
 
-        const contextChunks = await getMatchesFromEmbeddings(question, 15, currentRepo);
+        const contextChunks = await getMatchesFromEmbeddings(question, 15, currentRepo, targetFile);
         const contextText = contextChunks
             .map(c => `FILE: ${c.path}\n${c.content}`)
             .join('\n\n');
@@ -84,7 +88,10 @@ const getChatHistory = async (req, res) => {
     const { repoUrl } = req.query;
     try {
         const chat = await ChatHistory.findOne({ userId: req.userId, repoUrl });
-        res.json(chat ? chat.messages : []);
+        res.json({
+            messages: chat ? chat.messages : [],
+            files: chat ? chat.files || [] : []
+        });
     } catch (error) {
         console.error('[chat/history] Fetch failed:', error.message);
         res.status(500).json({ error: 'Fetch failed' });
@@ -103,4 +110,15 @@ const getChatList = async (req, res) => {
     }
 };
 
-module.exports = { askQuestion, getChatHistory, getChatList };
+const deleteChatHistory = async (req, res) => {
+    const { repoUrl } = req.query;
+    try {
+        await ChatHistory.findOneAndDelete({ userId: req.userId, repoUrl });
+        res.json({ message: 'Chat deleted' });
+    } catch (error) {
+        console.error('[chat/delete] Fetch failed:', error.message);
+        res.status(500).json({ error: 'Deletion failed' });
+    }
+};
+
+module.exports = { askQuestion, getChatHistory, getChatList, deleteChatHistory };

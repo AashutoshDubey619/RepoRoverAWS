@@ -27,12 +27,16 @@ const ingestRepo = (io) => async (req, res) => {
 
         // Initialize ChatHistory so repo appears in sidebar immediately
         let chat = await ChatHistory.findOne({ userId: req.userId, repoUrl: cleanURL });
+        const filePaths = validFiles.map(f => f.path);
+        
         if (!chat) {
-            chat = new ChatHistory({ userId: req.userId, repoUrl: cleanURL, messages: [] });
-            await chat.save();
+            chat = new ChatHistory({ userId: req.userId, repoUrl: cleanURL, messages: [], files: filePaths });
+        } else {
+            chat.files = filePaths;
         }
+        await chat.save();
 
-        res.json({ message: 'Scan completed', totalFiles: validFiles.length });
+        res.json({ message: 'Scan completed', totalFiles: validFiles.length, files: filePaths });
     } catch (error) {
         console.error('[ingest] Error:', error.message);
         io.emit('log', 'Error during ingestion');

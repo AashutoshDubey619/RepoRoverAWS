@@ -89,20 +89,27 @@ async function processAndStore(files, onProgress) {
     return totalVectors;
 }
 
-async function getMatchesFromEmbeddings(question, topK = 15, repoUrl = null) {
+async function getMatchesFromEmbeddings(question, topK = 15, repoUrl = null, targetFile = null) {
     const index = pinecone.index("reporover");
     try {
         const queryEmbedding = await embeddings.embedQuery(question);
 
         // Filter Object
-        const filter = repoUrl ? { repoUrl: { $eq: repoUrl } } : undefined;
-        console.log(`🔍 Querying Pinecone with filter: ${JSON.stringify(filter)}`);
+        const filter = {
+            ...(repoUrl && { repoUrl: { $eq: repoUrl } }),
+            ...(targetFile && { path: { $eq: targetFile } })
+        };
+        
+        // If filter is completely empty (no repoUrl and no targetFile), set it to undefined to query all
+        const finalFilter = Object.keys(filter).length > 0 ? filter : undefined;
+
+        console.log(`🔍 Querying Pinecone with filter: ${JSON.stringify(finalFilter)}`);
 
         const queryResponse = await index.query({
             vector: queryEmbedding,
             topK: topK,
             includeMetadata: true,
-            filter: filter
+            filter: finalFilter
         });
 
         console.log(`📊 Found ${queryResponse.matches.length} matches for question: "${question}"`);

@@ -1,7 +1,7 @@
-import { Github, ChevronRight, Plus, User, LogOut } from 'lucide-react';
+import { Github, ChevronRight, Plus, User, LogOut, Trash2 } from 'lucide-react';
 import Logo from './Logo';
 
-export default function Sidebar({ repoUrl, chatHistoryList, onNewChat, onLoadChat, onLogout, username }) {
+export default function Sidebar({ repoUrl, chatHistoryList, onNewChat, onLoadChat, onDeleteChat, onLogout, username }) {
     return (
         <>
             {/* Desktop Sidebar Header */}
@@ -39,21 +39,31 @@ export default function Sidebar({ repoUrl, chatHistoryList, onNewChat, onLoadCha
                     <div className="text-zinc-600 text-xs px-3 italic">No history yet.</div>
                 ) : (
                     chatHistoryList.map((chat, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => onLoadChat(chat.repoUrl)}
-                            className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all group mb-1
-                                ${repoUrl === chat.repoUrl
-                                    ? 'bg-zinc-900 text-white border border-zinc-700 shadow-sm'
-                                    : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'}
-                            `}
-                        >
-                            <Github className="w-4 h-4 shrink-0 opacity-70 group-hover:text-purple-400 transition-colors" />
-                            <span className="truncate font-mono text-xs flex-1 text-left">
-                                {chat.repoUrl.replace('https://github.com/', '')}
-                            </span>
-                            <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-50" />
-                        </button>
+                        <div key={idx} className="relative group mb-1 flex items-center">
+                            <button
+                                onClick={() => onLoadChat(chat.repoUrl)}
+                                className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all pr-8
+                                    ${repoUrl === chat.repoUrl
+                                        ? 'bg-zinc-900 text-white border border-zinc-700 shadow-sm'
+                                        : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'}
+                                `}
+                            >
+                                <Github className="w-4 h-4 shrink-0 opacity-70 group-hover:text-purple-400 transition-colors" />
+                                <span className="truncate font-mono text-xs flex-1 text-left">
+                                    {chat.repoUrl.replace('https://github.com/', '')}
+                                </span>
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteChat(chat.repoUrl);
+                                }}
+                                className="absolute right-2 p-1.5 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all bg-black rounded-md hover:bg-zinc-800"
+                                title="Delete Chat"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
                     ))
                 )}
             </div>

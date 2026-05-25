@@ -17,8 +17,9 @@ export default function ChatInterface() {
     const { username, logout } = useAuth();
 
     const [repoUrl, setRepoUrl] = useState('');
-    const [status, setStatus] = useState('idle'); // idle | scanning | chatting | ready
+    const [status, setStatus] = useState('idle');
     const [messages, setMessages] = useState([WELCOME_MSG]);
+    const [repoFiles, setRepoFiles] = useState([]);
     const [progress, setProgress] = useState(null);
     const [chatHistoryList, setChatHistoryList] = useState([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function ChatInterface() {
         isBotReplying.current = false;
         setRepoUrl('');
         setMessages([WELCOME_MSG]);
+        setRepoFiles([]);
         setStatus('idle');
         setProgress(null);
         setIsSidebarOpen(false);
@@ -61,9 +63,12 @@ export default function ChatInterface() {
         setIsSidebarOpen(false);
         try {
             const res = await api.get(`/api/chat/history?repoUrl=${url}`);
-            setMessages(res.data.length > 0 ? res.data : [WELCOME_MSG]);
-        } catch {
-            setMessages([{ role: 'bot', text: 'Error loading history. Please try again.' }]);
+            setMessages(res.data.messages.length > 0 ? res.data.messages : [WELCOME_MSG]);
+            setRepoFiles(res.data.files || []);
+        } catch (error) {
+            console.error('Failed to load chat:', error);
+            setMessages([WELCOME_MSG]);
+            setRepoFiles([]);
         }
     };
 
@@ -75,6 +80,7 @@ export default function ChatInterface() {
         try {
             const res = await api.post('/api/ingest', { repoUrl });
             setStatus('ready');
+            setRepoFiles(res.data.files || []);
             setMessages(prev => [...prev, {
                 role: 'bot',
                 text: `Analysis complete. Indexed ${res.data.totalFiles} files. System ready for queries.`
@@ -165,6 +171,33 @@ export default function ChatInterface() {
         }
     };
 
+    const handleDeleteChat = async (url) => {
+        try {
+            await api.delete(`/api/chat/history?repoUrl=${url}`);
+            if (repoUrl === url) startNewChat(); // if deleting current chat, reset UI
+            fetchChatList();
+        } catch (error) {
+            console.error('Failed to delete chat:', error);
+        }
+    };
+
+    const handleExportChat = () => {
+        let md = `# RepoRover Chat Export\n\n**Repository:** ${repoUrl || 'Unknown'}\n\n---\n\n`;
+        messages.forEach(m => {
+            if (m.role === 'bot' && m.text.includes('Ready to analyze')) return;
+            const roleName = m.role === 'user' ? '👤 **You**' : '🤖 **RepoRover**';
+            md += `${roleName}\n\n${m.text}\n\n---\n\n`;
+        });
+        
+        const blob = new Blob([md], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporover-chat-${Date.now()}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="flex h-screen bg-black text-white font-sans antialiased selection:bg-white selection:text-black overflow-hidden">
 
@@ -194,6 +227,7 @@ export default function ChatInterface() {
                     chatHistoryList={chatHistoryList}
                     onNewChat={startNewChat}
                     onLoadChat={loadChat}
+                    onDeleteChat={handleDeleteChat}
                     onLogout={logout}
                     username={username}
                 />
@@ -208,7 +242,9 @@ export default function ChatInterface() {
                     repoUrl={repoUrl}
                     setRepoUrl={setRepoUrl}
                     onAnalyze={handleIngest}
+                    onExport={handleExportChat}
                     isScanning={status === 'scanning'}
+                    hasMessages={messages.length > 1}
                 />
 
                 {/* Messages */}
@@ -232,7 +268,8 @@ export default function ChatInterface() {
 
                 <ChatInput
                     onAsk={handleAsk}
-                    disabled={status === 'scanning'}
+                    disabled={status !== 'ready'}
+                    repoFiles={repoFiles}
                 />
             </div>
         </div>
