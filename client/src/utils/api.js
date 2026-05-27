@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Exclusively use localhost for local development
-const PRIMARY_URL = 'http://localhost:5000';
+// Use the production URL by default, or localhost for local testing if needed
+const PRIMARY_URL = import.meta.env.VITE_API_URL || 'https://reporoveraws.onrender.com';
 
 // Create axios instance without a strict timeout, since ingestion can take several minutes
 const api = axios.create({
