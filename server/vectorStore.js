@@ -54,6 +54,7 @@ async function processAndStore(files, onProgress) {
                     const batchVectors = await embeddings.embedDocuments(batchTexts);
 
                     // Prepare vectors for Pinecone
+                    const ext = file.path.includes('.') ? file.path.split('.').pop().toLowerCase() : 'unknown';
                     const vectorsToUpsert = batchChunks.map((chunk, idx) => ({
                         id: `${file.path}-${Date.now()}-${i + idx}`,
                         values: batchVectors[idx],
@@ -61,6 +62,7 @@ async function processAndStore(files, onProgress) {
                             path: file.path,
                             content: chunk.pageContent,
                             repoUrl: file.repoUrl || "",
+                            extension: ext,
                         }
                     }));
 
