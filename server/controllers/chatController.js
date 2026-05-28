@@ -34,14 +34,21 @@ const askQuestion = async (req, res) => {
             .map(c => `FILE: ${c.path}\n${c.content}`)
             .join('\n\n');
 
-        const fileListText = chat.files && chat.files.length > 0 
-            ? chat.files.map(f => `- ${f}`).join('\n')
-            : 'No files available.';
+        const MAX_FILES_IN_PROMPT = 200;
+        let fileListText = 'No files available.';
+        if (chat.files && chat.files.length > 0) {
+            const filesToInclude = chat.files.slice(0, MAX_FILES_IN_PROMPT);
+            fileListText = filesToInclude.map(f => `- ${f}`).join('\n');
+            if (chat.files.length > MAX_FILES_IN_PROMPT) {
+                fileListText += `\n...and ${chat.files.length - MAX_FILES_IN_PROMPT} more files not shown for brevity.`;
+            }
+        }
 
         const prompt = `You are RepoRover, an elite Senior Software Engineer and architectural expert analyzing a GitHub repository.
 
 ROLE & BEHAVIOR:
 - Debug code, suggest high-quality improvements, and provide detailed, easy-to-understand explanations.
+- When explaining a file or piece of logic, DO NOT just explain it theoretically. Always include relevant code snippets from the context to demonstrate what you are explaining.
 - If the user asks a conversational question (e.g., "Hi", "How are you?"), handle it naturally and politely without getting confused by the codebase context.
 - Focus strictly on the primary application logic and main files. Ignore boilerplate, auto-generated files, configuration noise, or irrelevant dependency modules unless specifically asked about them.
 - Format your response beautifully using standard Markdown. Use bolding, bullet points, and code blocks appropriately.
@@ -82,9 +89,9 @@ Your detailed response:`;
         console.error('[chat] Response generation failed:', error.message);
         // If headers are not sent, send JSON error. If already streaming, close stream with error event.
         if (!res.headersSent) {
-            res.status(500).json({ error: 'Response failed' });
+            res.status(500).json({ error: error.message || 'Response failed' });
         } else {
-            res.write(`data: ${JSON.stringify({ error: 'Response generation failed.' })}\n\n`);
+            res.write(`data: ${JSON.stringify({ error: error.message || 'Response generation failed.' })}\n\n`);
             res.write(`data: [DONE]\n\n`);
             res.end();
         }
