@@ -3,7 +3,7 @@
   <h1>🤖 RepoRover</h1>
   <p><strong>Elite AI-Powered Codebase Auditor & Intelligence Platform</strong></p>
   <p>
-    <a href="https://reporoveraws.onrender.com/">Live Demo</a>
+    <a href="https://repo-rover-akd.vercel.app/">Live Demo</a>
     ·
     <a href="#-key-features">Features</a>
     ·
@@ -15,7 +15,6 @@
 
 RepoRover is a sophisticated developer tool designed to bridge the gap between complex codebases and developer understanding. By leveraging advanced **Retrieval-Augmented Generation (RAG)**, it allows users to _chat_ with any public GitHub repository, ask technical questions, identify bugs, and receive senior-level architectural reviews instantly — **without cloning a single file locally.**
 
-![RepoRover Chat Interface](https://via.placeholder.com/1000x500.png?text=RepoRover+Dashboard+Preview)
 
 ---
 
