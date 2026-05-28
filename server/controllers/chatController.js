@@ -34,6 +34,10 @@ const askQuestion = async (req, res) => {
             .map(c => `FILE: ${c.path}\n${c.content}`)
             .join('\n\n');
 
+        const fileListText = chat.files && chat.files.length > 0 
+            ? chat.files.map(f => `- ${f}`).join('\n')
+            : 'No files available.';
+
         const prompt = `You are RepoRover, an elite Senior Software Engineer and architectural expert analyzing a GitHub repository.
 
 ROLE & BEHAVIOR:
@@ -43,7 +47,10 @@ ROLE & BEHAVIOR:
 - Format your response beautifully using standard Markdown. Use bolding, bullet points, and code blocks appropriately.
 - IMPORTANT: Do NOT wrap your entire response in a single markdown code block. Only use code blocks for actual code snippets.
 
-CONTEXT FILES EXTRACTED FROM THE REPOSITORY:
+FULL REPOSITORY FILE LIST (For structural context):
+${fileListText}
+
+CONTEXT FILES EXTRACTED FROM THE REPOSITORY (File contents relevant to the query):
 ${contextText}
 
 USER QUESTION: 
