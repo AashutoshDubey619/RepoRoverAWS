@@ -114,9 +114,9 @@ export default function ChatInterface() {
 
             isBotReplying.current = true; // Block scroll for bot response
             
-            // Append an empty bot message instantly and remove "Thinking..."
+            // Append an empty bot message — keep status as 'chatting' until first chunk
             setMessages(prev => [...prev, { role: 'bot', text: '' }]);
-            setStatus('ready'); 
+            let receivedFirstChunk = false;
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder('utf-8');
@@ -139,6 +139,10 @@ export default function ChatInterface() {
                         try {
                             const data = JSON.parse(dataStr);
                             if (data.text) {
+                                if (!receivedFirstChunk) {
+                                    receivedFirstChunk = true;
+                                    setStatus('ready');
+                                }
                                 setMessages(prev => {
                                     const newMsgs = [...prev];
                                     const lastIdx = newMsgs.length - 1;
@@ -250,14 +254,20 @@ export default function ChatInterface() {
 
                 {/* Messages */}
                 <div className="flex-1 p-4 md:p-8 overflow-y-auto space-y-6 md:space-y-8 scroll-smooth relative z-10 custom-scrollbar">
-                    {messages.map((msg, idx) => (
-                        <ChatMessage key={idx} role={msg.role} text={msg.text} />
-                    ))}
+                    {messages.map((msg, idx) => {
+                        // Hide the empty bot placeholder while still thinking
+                        if (status === 'chatting' && msg.role === 'bot' && msg.text === '' && idx === messages.length - 1) return null;
+                        return <ChatMessage key={idx} role={msg.role} text={msg.text} />;
+                    })}
 
                     {status === 'chatting' && (
-                        <div className="flex gap-4 animate-pulse ml-12">
-                            <div className="text-zinc-500 text-xs font-mono flex items-center gap-2">
-                                <Loader2 className="animate-spin w-3 h-3" /> Thinking...
+                        <div className="flex gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border bg-zinc-900 border-zinc-700 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+                                <Bot className="w-5 h-5 text-purple-400" />
+                            </div>
+                            <div className="flex items-center gap-2 text-zinc-400 text-sm font-mono py-1">
+                                <Loader2 className="animate-spin w-4 h-4 text-purple-400" />
+                                <span className="animate-pulse">Thinking...</span>
                             </div>
                         </div>
                     )}
