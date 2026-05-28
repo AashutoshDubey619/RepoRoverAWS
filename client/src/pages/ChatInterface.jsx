@@ -100,7 +100,8 @@ export default function ChatInterface() {
         
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/chat', {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://reporoveraws.onrender.com';
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
