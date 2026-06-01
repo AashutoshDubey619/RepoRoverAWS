@@ -105,7 +105,7 @@ async function getRepoStructure(owner, repo, path = '') {
 
 async function downloadFiles(fileList, io) {
     const pLimit = require('p-limit');
-    const limit = pLimit(50);
+    const limit = pLimit(30); // Balanced for speed while maintaining memory safety on 1GB instances
     let downloadedCount = 0;
 
     const filePromises = fileList.map(file => limit(async () => {
