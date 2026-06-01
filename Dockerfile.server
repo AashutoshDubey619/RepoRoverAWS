@@ -2,12 +2,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-
 COPY server/package*.json ./
-RUN npm install
+RUN npm install --omit=dev
 
 COPY server/ .
 
 EXPOSE 5000
 
+# Use node directly (not nodemon) for production
 CMD ["node", "index.js"]
